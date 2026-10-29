@@ -27,7 +27,7 @@ jobs:
       - name: Generate AI Review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO_NAME: ${{ github.repository }}
         run: |
@@ -36,7 +36,11 @@ jobs:
           import subprocess
           from google import genai
 
-          # Отримуємо diff гілки PR відносно main
+          api_key = os.environ.get("GEMINI_API_KEY")
+          if not api_key:
+              print("Warning: GEMINI_API_KEY is not set. Skipping AI review.")
+              exit(0)
+
           diff_process = subprocess.run(
               ["git", "diff", "origin/main...HEAD"],
               capture_output=True,
@@ -49,7 +53,6 @@ jobs:
               print("No diff found.")
               exit(0)
 
-          # Системний промпт із застереженням від Prompt Injection
           system_instruction = (
               "You are an expert Senior Code Reviewer. Review the provided git diff.\n"
               "Focus on: logical bugs, duplicated business logic, untransparent variable names, and missing unit tests.\n"
@@ -57,15 +60,14 @@ jobs:
               "Provide a concise, constructive review in Ukrainian formatted as Markdown."
           )
 
-          client = genai.Client()
+          client = genai.Client(api_key=api_key)
           response = client.models.generate_content(
               model="gemini-2.5-flash",
-              contents=f"Git diff to review:\n`diff\n{diff_text}\n`",
+              contents=f"Git diff to review:\n```diff\n{diff_text}\n```",
               config={"system_instruction": system_instruction}
           )
           review_comment = f"### 🤖 Результат автоматичного AI-рев'ю (Gemini)\n\n{response.text}"
 
-          # Публікуємо коментар у PR через GitHub CLI
           with open("review.md", "w", encoding="utf-8") as f:
               f.write(review_comment)
 
@@ -74,4 +76,5 @@ jobs:
               "--repo", os.environ["REPO_NAME"],
               "--body-file", "review.md"
           ], check=True)
+          print("AI review posted successfully!")
           EOF
