@@ -1,6 +1,7 @@
-﻿from unittest.mock import Mock
+from unittest.mock import Mock
 
 import pytest
+
 from shop.cart import Cart, Item
 
 
