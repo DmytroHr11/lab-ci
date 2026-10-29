@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -30,7 +31,7 @@ class Cart:
         else:
             self._items[name] = Item(name, price, qty)
 
-    def remove(self, name: str) -> None:
+    def remove(   self,    name: str   ) -> None:
         if name not in self._items:
             raise KeyError(name)
         del self._items[name]
