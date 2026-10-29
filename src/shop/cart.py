@@ -58,3 +58,4 @@ class Cart:
 
     def format_total(self) -> str:
         return f"{self.total():.2f} UAH"
+
